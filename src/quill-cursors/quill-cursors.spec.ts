@@ -550,6 +550,40 @@ describe('QuillCursors', () => {
       const cursors = new QuillCursors(quill);
       expect(() => cursors.toggleFlag('abc')).not.toThrow();
     });
+
+    describe('touch', () => {
+      it('toggles near flags by touchstart event', () => {
+        const cursors = new QuillCursors(quill);
+        cursors.createCursor('abc', 'Iron Man', 'red');
+
+        const cursor = cursors.cursors()[0];
+        jest.spyOn(cursor, 'toggleNearCursor');
+
+        const touch = new TouchEvent('touchstart');
+        const editor = quill.container.getElementsByClassName('ql-editor')[0];
+        editor.dispatchEvent(touch);
+        expect(cursor.toggleNearCursor).toBeCalled();
+      });
+
+      it('hide flags after 2 secs', () => {
+        jest.useFakeTimers();
+        const cursors = new QuillCursors(quill);
+        cursors.createCursor('abc', 'Iron Man', 'red');
+
+        const cursor = cursors.cursors()[0];
+        jest.spyOn(cursor, 'toggleNearCursor');
+        jest.spyOn(cursor, 'toggleFlag');
+
+        const touch = new TouchEvent('touchstart');
+        const editor = quill.container.getElementsByClassName('ql-editor')[0];
+        editor.dispatchEvent(touch);
+        expect(cursor.toggleNearCursor).toBeCalled();
+
+        jest.runAllTimers();
+
+        expect(cursor.toggleFlag).toBeCalled();
+      });
+    });
   });
 
   function createLeaf(tag?: string): any[] {

@@ -1,6 +1,7 @@
 import IQuillCursorsOptions from './i-quill-cursors-options';
 import IQuillRange from './i-range';
 import tinycolor = require('tinycolor2');
+import {ICoordinates} from './i-coordinates';
 
 export default class Cursor {
   public static readonly CONTAINER_ELEMENT_TAG = 'SPAN';
@@ -10,6 +11,8 @@ export default class Cursor {
   public static readonly SELECTION_BLOCK_CLASS = 'ql-cursor-selection-block';
   public static readonly CARET_CLASS = 'ql-cursor-caret';
   public static readonly CARET_CONTAINER_CLASS = 'ql-cursor-caret-container';
+  public static readonly CONTAINER_HOVER_CLASS = 'hover';
+  public static readonly CONTAINER_NO_POINTER_CLASS = 'no-pointer';
   public static readonly FLAG_CLASS = 'ql-cursor-flag';
   public static readonly SHOW_FLAG_CLASS = 'show-flag';
   public static readonly FLAG_FLIPPED_CLASS = 'flag-flipped';
@@ -21,6 +24,7 @@ export default class Cursor {
   public readonly name: string;
   public readonly color: string;
   public range: IQuillRange;
+  public coordinates: ICoordinates;
 
   private _el: HTMLElement;
   private _selectionEl: HTMLElement;
@@ -29,11 +33,15 @@ export default class Cursor {
   private _hideDelay: string;
   private _hideSpeedMs: number;
   private _positionFlag: (flag: HTMLElement, caretRectangle: ClientRect, container: ClientRect) => void;
+  private _showFlagTimeout: NodeJS.Timeout;
 
   public constructor(id: string, name: string, color: string) {
     this.id = id;
     this.name = name;
     this.color = color;
+    this.toggleNearCursor = this.toggleNearCursor.bind(this);
+    this._toggleOpenedCursor = this._toggleOpenedCursor.bind(this);
+    this._setHoverState = this._setHoverState.bind(this);
   }
 
   public build(options: IQuillCursorsOptions): HTMLElement {
@@ -62,6 +70,10 @@ export default class Cursor {
     this._caretEl = caretContainerElement;
     this._flagEl = flagElement;
 
+    caretContainerElement.addEventListener('mouseover', this._setHoverState);
+
+    this._updateCoordinates();
+
     return this._el;
   }
 
@@ -77,9 +89,21 @@ export default class Cursor {
     this._el.parentNode.removeChild(this._el);
   }
 
+  public toggleNearCursor(pointX: number, pointY: number): boolean {
+    const {x, y, width, height} = this.coordinates;
+
+    const isXNear = pointX - x - width <= 0 && pointX - x >= 0;
+    const isYNear = pointY - y - height <= 0 && pointY - y >= 0;
+    const shouldShow = isXNear && isYNear;
+
+    this.toggleFlag(shouldShow);
+
+    return shouldShow;
+  }
+
   public toggleFlag(shouldShow?: boolean): void {
-    const isShown = this._flagEl.classList.toggle(Cursor.SHOW_FLAG_CLASS, shouldShow);
-    if (isShown) return;
+    this._caretEl.classList.toggle(Cursor.CONTAINER_HOVER_CLASS, shouldShow);
+    this._flagEl.classList.toggle(Cursor.SHOW_FLAG_CLASS, shouldShow);
     this._flagEl.classList.add(Cursor.NO_DELAY_CLASS);
     // We have to wait for the animation before we can put the delay back
     setTimeout(() => this._flagEl.classList.remove(Cursor.NO_DELAY_CLASS), this._hideSpeedMs);
@@ -95,6 +119,8 @@ export default class Cursor {
     } else {
       this._updateCaretFlag(rectangle, container);
     }
+
+    this._updateCoordinates();
   }
 
   public updateSelection(selections: ClientRect[], container: ClientRect): void {
@@ -104,6 +130,28 @@ export default class Cursor {
     selections = this._sanitize(selections);
     selections = this._sortByDomPosition(selections);
     selections.forEach((selection: ClientRect) => this._addSelection(selection, container));
+  }
+
+  private _setHoverState(): void {
+    this._caretEl.classList.add(Cursor.CONTAINER_NO_POINTER_CLASS);
+    document.addEventListener('mouseover', this._toggleOpenedCursor);
+  }
+
+  private _toggleOpenedCursor(e: MouseEvent): void {
+    const shouldShow = this.toggleNearCursor(e.clientX, e.clientY);
+    this._caretEl.classList.toggle(Cursor.CONTAINER_NO_POINTER_CLASS, shouldShow);
+    document.removeEventListener('mouseover', this._toggleOpenedCursor);
+    if (!shouldShow) {
+      this._showFlagTimeout = null;
+      return;
+    }
+
+    this._showFlagTimeout = setTimeout(this._setHoverState, 100);
+  }
+
+  private _updateCoordinates(): void {
+    const {x, y, width, height} = this._caretEl.getBoundingClientRect();
+    this.coordinates = {x, y, width, height};
   }
 
   private _updateCaretFlag(caretRectangle: ClientRect, container: ClientRect): void {

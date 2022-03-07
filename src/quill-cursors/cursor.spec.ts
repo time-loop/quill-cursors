@@ -327,4 +327,65 @@ describe('Cursor', () => {
       expect(selections.children[0]).toHaveStyle('left: 50px');
     });
   });
+
+  describe('mouse over handlers', () => {
+    it('disable pointer events by mouse over', () => {
+      const cursor = new Cursor('abc', 'Jane Bloggs', 'red');
+      const element = cursor.build(options);
+      const container = element.getElementsByClassName(Cursor.CARET_CONTAINER_CLASS)[0];
+      const mouseEvent = new MouseEvent('mouseover');
+      container.dispatchEvent(mouseEvent);
+      expect(container).toHaveClass(Cursor.CONTAINER_NO_POINTER_CLASS);
+    });
+
+    it('add listener to document by mouse over', () => {
+      jest.spyOn(document, 'addEventListener');
+      const cursor = new Cursor('abc', 'Jane Bloggs', 'red');
+      const element = cursor.build(options);
+      const container = element.getElementsByClassName(Cursor.CARET_CONTAINER_CLASS)[0];
+      const mouseEvent = new MouseEvent('mouseover');
+      container.dispatchEvent(mouseEvent);
+      expect(document.addEventListener).toHaveBeenCalled();
+    });
+
+    it('add listeners to document by mouse over', () => {
+      jest.spyOn(document, 'addEventListener');
+      const cursor = new Cursor('abc', 'Jane Bloggs', 'red');
+      const element = cursor.build(options);
+      const container = element.getElementsByClassName(Cursor.CARET_CONTAINER_CLASS)[0];
+      const mouseEvent = new MouseEvent('mouseover');
+      container.dispatchEvent(mouseEvent);
+      expect(document.addEventListener).toHaveBeenCalled();
+      jest.runAllTimers();
+      expect(document.addEventListener).toHaveBeenCalledTimes(2);
+    });
+
+    it('keep flag opened if the pointer is near cursor', () => {
+      jest.spyOn(document, 'addEventListener');
+      const cursor = new Cursor('abc', 'Jane Bloggs', 'red');
+      const element = cursor.build(options);
+      const container = element.getElementsByClassName(Cursor.CARET_CONTAINER_CLASS)[0];
+      const mouseEvent = new MouseEvent('mouseover', {
+        clientX: 0,
+        clientY: 0,
+      }) as any;
+      container.dispatchEvent(mouseEvent);
+      document.dispatchEvent(mouseEvent);
+      expect(container).toHaveClass(Cursor.CONTAINER_NO_POINTER_CLASS);
+    });
+
+    it('hide flag if the pointer is not near cursor', () => {
+      jest.spyOn(document, 'addEventListener');
+      const cursor = new Cursor('abc', 'Jane Bloggs', 'red');
+      const element = cursor.build(options);
+      const container = element.getElementsByClassName(Cursor.CARET_CONTAINER_CLASS)[0];
+      const mouseEvent = new MouseEvent('mouseover', {
+        clientX: 10,
+        clientY: 10,
+      }) as any;
+      container.dispatchEvent(mouseEvent);
+      document.dispatchEvent(mouseEvent);
+      expect(container).not.toHaveClass(Cursor.CONTAINER_NO_POINTER_CLASS);
+    });
+  });
 });
