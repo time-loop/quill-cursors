@@ -1,5 +1,5 @@
 {
-  "name": "quill-cursors",
+  "name": "@time-loop/quill-cursors",
   "version": "3.1.2",
   "description": "A multi cursor module for Quill.",
   "keywords": [
@@ -23,7 +23,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/reedsy/quill-cursors.git"
+    "url": "git+https://github.com/time-loop/quill-cursors.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
   },
   "devDependencies": {
     "@reedsy/eslint-config-reedsy": "github:reedsy/eslint-config-reedsy#4.0.0",
