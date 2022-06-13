@@ -1,6 +1,6 @@
 {
   "name": "@time-loop/quill-cursors",
-  "version": "3.1.2",
+  "version": "3.1.2-a1",
   "description": "A multi cursor module for Quill.",
   "keywords": [
     "quill",
